@@ -106,7 +106,7 @@ class Kiwoom(QAxWidget):
 
     def detail_account_info(self):
         print("예수금을 요청하는 부분")
-
+        print("수정")
         self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_num)
         self.dynamicCall("SetInputValue(QString, QString)", "비밀번호", "0000")
         self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
@@ -623,31 +623,29 @@ class Kiwoom(QAxWidget):
             # 등락율이 1.0% 이상이고 오늘 산 잔고에 없을 경우 (등락율 수정?)
             self.order_yes_dict = {}
             if sCode not in self.jango_dict.keys():
-                double_mesu = False
-                if sCode not in self.order_yes_dict.keys() and double_mesu == False:
+                if sCode not in self.order_yes_dict.keys():
+                    self.order_yes_dict.update({sCode: {}})
 
-                    if d < -1.5:
-                        double_mesu = True
+                    if d < -2 :
                         print("%s %s" % ("신규매수를 한다", sCode))
-                        result = (self.use_money) / e
+                        result = 300000 / e
                         quantity = int(result)
-                        if e > 0:
-                            order_success = self.dynamicCall(
-                                "SendOrder(QString, QString, QString, int, QString, int, int, QString, QString",
-                                ["신규매수", self.portfolio_stock_dict[sCode]['주문용스크린번호'], self.account_num, 1,
-                                 sCode, quantity, 0, self.realType.SENDTYPE['거래구분']['시장가'], ""])
-                            if order_success == 0:
-                                self.order_yes_dict.update({sCode: {}})
-                                self.order_yes_dict[sCode].update({"체결시간": a})
-                                double_mesu = False
-                                print("매수주문 전달 성공")
-                            else:
-                                print("매수주문 전달 실패")
+                        order_success = self.dynamicCall(
+                            "SendOrder(QString, QString, QString, int, QString, int, int, QString, QString",
+                            ["신규매수", self.portfolio_stock_dict[sCode]['주문용스크린번호'], self.account_num, 1,
+                            sCode, quantity, 0, self.realType.SENDTYPE['거래구분']['시장가'], ""])
+                        if order_success == 0:
+                            self.order_yes_dict[sCode].update({"체결시간": a})
+                            print(self.order_yes_dict)
+                            print("매수주문 전달 성공")
+                        else:
+                            print("매수주문 전달 실패")
                     else:
                         print("매수조건 부적합")
                 else:
                     print("이미 매수했던 종목")
-
+            else:
+                print("중복매수 방지")
 
 
             not_meme_list = list(self.not_account_stock_dict)
@@ -787,6 +785,24 @@ class Kiwoom(QAxWidget):
 
             if stock_quan == 0:
                 del self.jango_dict[sCode]
+                self.dynamicCall("SetRealRemove(QString, QString", self.portfolio_stock_dict[sCode], sCode)
+
+            if sCode not in self.order_yes_dict.keys():
+                self.order_yes_dict.update({sCode: {}})
+
+            self.order_yes_dict[sCode].update({"현재가": current_price})
+            self.order_yes_dict[sCode].update({"종목코드": sCode})
+            self.order_yes_dict[sCode].update({"종목명": stock_name})
+            self.order_yes_dict[sCode].update({"보유수량": stock_quan})
+            self.order_yes_dict[sCode].update({"주문가능수량": like_quan})
+            self.order_yes_dict[sCode].update({"매입단가": buy_price})
+            self.order_yes_dict[sCode].update({"총매입가": total_buy_price})
+            self.order_yes_dict[sCode].update({"매도매수구분": meme_gubun})
+            self.order_yes_dict[sCode].update({"(최우선)매도호가": first_sell_price})
+            self.order_yes_dict[sCode].update({"(최우선)매수호가": first_buy_price})
+
+            if stock_quan == 0:
+                del self.order_yes_dict[sCode]
                 self.dynamicCall("SetRealRemove(QString, QString", self.portfolio_stock_dict[sCode], sCode)
 
     # 송수신 메세지 get
